@@ -1,0 +1,156 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ApiDocsController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+
+        // Buscar tokens ativos do usuário
+        $tokens = $user->tokens()->latest()->get()->map(fn ($token) => [
+            'id' => $token->id,
+            'name' => $token->name,
+            'last_used_at' => $token->last_used_at?->toISOString(),
+            'created_at' => $token->created_at->toISOString(),
+        ]);
+
+        // Definir endpoints da API
+        $endpoints = $this->getEndpoints();
+
+        return Inertia::render('ApiDocs', [
+            'endpoints' => $endpoints,
+            'tokens' => $tokens,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'baseUrl' => config('app.url').'/api',
+        ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getEndpoints(): array
+    {
+        return [
+            [
+                'group' => 'Autenticação',
+                'endpoints' => [
+                    [
+                        'name' => 'Login',
+                        'method' => 'POST',
+                        'path' => '/login',
+                        'description' => 'Autentica um usuário e retorna um token de acesso.',
+                        'auth' => false,
+                        'parameters' => [
+                            [
+                                'name' => 'email',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'E-mail do usuário',
+                            ],
+                            [
+                                'name' => 'password',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'Senha do usuário',
+                            ],
+                            [
+                                'name' => 'device_name',
+                                'type' => 'string',
+                                'required' => false,
+                                'description' => 'Nome do dispositivo (opcional)',
+                            ],
+                        ],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'token' => 'seu-token-aqui',
+                                    'user' => [
+                                        'id' => 1,
+                                        'name' => 'Nome do Usuário',
+                                        'email' => 'email@exemplo.com',
+                                    ],
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 422,
+                                'example' => [
+                                    'message' => 'As credenciais informadas estão incorretas.',
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Obter Usuário Autenticado',
+                        'method' => 'GET',
+                        'path' => '/user',
+                        'description' => 'Retorna os dados do usuário autenticado.',
+                        'auth' => true,
+                        'parameters' => [],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'id' => 1,
+                                    'name' => 'Nome do Usuário',
+                                    'email' => 'email@exemplo.com',
+                                    'email_verified_at' => '2025-01-01T00:00:00.000000Z',
+                                    'created_at' => '2025-01-01T00:00:00.000000Z',
+                                    'updated_at' => '2025-01-01T00:00:00.000000Z',
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 401,
+                                'example' => [
+                                    'message' => 'Unauthenticated.',
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Logout',
+                        'method' => 'POST',
+                        'path' => '/logout',
+                        'description' => 'Revoga o token atual do usuário.',
+                        'auth' => true,
+                        'parameters' => [],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'message' => 'Logout realizado com sucesso.',
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Logout de Todos os Dispositivos',
+                        'method' => 'POST',
+                        'path' => '/logout-all',
+                        'description' => 'Revoga todos os tokens do usuário.',
+                        'auth' => true,
+                        'parameters' => [],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'message' => 'Todos os tokens foram revogados.',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+}
