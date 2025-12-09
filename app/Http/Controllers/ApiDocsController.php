@@ -234,6 +234,52 @@ class ApiDocsController extends Controller
                             ],
                         ],
                     ],
+                    [
+                        'name' => 'Consulta Preço',
+                        'method' => 'GET',
+                        'path' => '/produtos/consulta-preco',
+                        'description' => 'Consulta o preço de um produto pelo código auxiliar (EAN). Prioridade: 1) Se passar cpf, busca região do cliente; 2) Se passar numregiao, busca pela região; 3) Se não passar nenhum, usa região 1; 4) Se numregiao = -1, retorna preços de todas as regiões.',
+                        'auth' => true,
+                        'parameters' => [
+                            [
+                                'name' => 'codauxiliar',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'Código auxiliar (EAN) do produto',
+                            ],
+                            [
+                                'name' => 'cpf',
+                                'type' => 'string',
+                                'required' => false,
+                                'description' => 'CPF/CNPJ do cliente (tem prioridade sobre numregiao)',
+                            ],
+                            [
+                                'name' => 'numregiao',
+                                'type' => 'integer',
+                                'required' => false,
+                                'description' => 'Número da região. Padrão: 1. Use -1 para retornar preços de todas as regiões.',
+                            ],
+                        ],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'data' => [
+                                        'codprod' => 12345,
+                                        'codauxiliar' => '7896647027882',
+                                        'numregiao' => 1,
+                                        'pvenda' => 29.90,
+                                    ],
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 404,
+                                'example' => [
+                                    'message' => 'Produto não encontrado.',
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];

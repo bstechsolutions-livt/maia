@@ -29,4 +29,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->name('api.produtos.consulta-cadastro');
     Route::get('/produtos/consulta-estoque', [ProdutoController::class, 'consultaEstoque'])
         ->name('api.produtos.consulta-estoque');
+    Route::get('/produtos/consulta-preco', [ProdutoController::class, 'consultaPreco'])
+        ->name('api.produtos.consulta-preco');
 });

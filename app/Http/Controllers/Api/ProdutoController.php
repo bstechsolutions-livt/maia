@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ConsultaCadastroRequest;
 use App\Http\Requests\Api\ConsultaEstoqueRequest;
+use App\Http\Requests\Api\ConsultaPrecoRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -169,6 +170,164 @@ class ProdutoController extends Controller
                 ((e.qtestger - e.qtbloqueada) - e.qtindeniz) as qt_disponivel
             ')
             ->orderBy('e.codfilial')
+            ->get()
+            ->all();
+    }
+
+    /**
+     * Consulta o preço de produto pelo código auxiliar (EAN).
+     *
+     * Prioridade:
+     * 1. Se passar cpf → busca região pelo cliente (via praça)
+     * 2. Se passar numregiao → busca pela região informada
+     * 3. Se não passar nenhum → região 1 (padrão)
+     * 4. Se numregiao = -1 → retorna array com preços de todas as regiões
+     */
+    public function consultaPreco(ConsultaPrecoRequest $request): JsonResponse
+    {
+        $codauxiliar = $request->validated('codauxiliar');
+        $cpf = $request->validated('cpf');
+        $numregiao = $request->validated('numregiao');
+
+        try {
+            // Prioridade 1: Se passou CPF, busca região pelo cliente
+            if ($cpf !== null && $cpf !== '') {
+                $cpfLimpo = preg_replace('/[^0-9]/', '', $cpf);
+
+                $regiaoCliente = $this->buscarRegiaoCliente($cpfLimpo);
+
+                if ($regiaoCliente === null) {
+                    return response()->json([
+                        'message' => 'Cliente não encontrado.',
+                    ], 404);
+                }
+
+                $preco = $this->buscarPrecoRegiao($codauxiliar, $regiaoCliente);
+
+                if (! $preco) {
+                    return response()->json([
+                        'message' => 'Produto não encontrado.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'data' => $preco,
+                ]);
+            }
+
+            // Prioridade 2 e 3: Usa numregiao ou padrão 1
+            if ($numregiao === null || $numregiao === '') {
+                $numregiao = 1;
+            } else {
+                $numregiao = (int) $numregiao;
+            }
+
+            // Prioridade 4: Se numregiao = -1, busca todas as regiões
+            if ($numregiao === -1) {
+                $precos = $this->buscarPrecoTodasRegioes($codauxiliar);
+
+                if (empty($precos)) {
+                    return response()->json([
+                        'message' => 'Produto não encontrado.',
+                    ], 404);
+                }
+
+                return response()->json([
+                    'data' => $precos,
+                ]);
+            }
+
+            // Verificar se a região existe
+            $regiaoExiste = DB::connection('oracle')
+                ->table('pcregiao')
+                ->where('numregiao', $numregiao)
+                ->exists();
+
+            if (! $regiaoExiste) {
+                return response()->json([
+                    'message' => "Região {$numregiao} não encontrada.",
+                ], 404);
+            }
+
+            // Buscar preço da região específica
+            $preco = $this->buscarPrecoRegiao($codauxiliar, $numregiao);
+
+            if (! $preco) {
+                return response()->json([
+                    'message' => 'Produto não encontrado.',
+                ], 404);
+            }
+
+            return response()->json([
+                'data' => $preco,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao consultar preço no Oracle', [
+                'codauxiliar' => $codauxiliar,
+                'cpf' => $cpf ?? null,
+                'numregiao' => $numregiao ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Erro ao consultar preço. Tente novamente mais tarde.',
+            ], 503);
+        }
+    }
+
+    /**
+     * Busca a região do cliente pelo CPF/CNPJ.
+     */
+    private function buscarRegiaoCliente(string $cpfLimpo): ?int
+    {
+        $resultado = DB::connection('oracle')
+            ->table('pcclient as c')
+            ->join('pcpraca as p', 'c.codpraca', '=', 'p.codpraca')
+            ->whereRaw("replace(replace(replace(replace(c.cgcent,',',''),'.',''),'-',''),'/','') = ?", [$cpfLimpo])
+            ->selectRaw('p.numregiao')
+            ->first();
+
+        return $resultado?->numregiao;
+    }
+
+    /**
+     * Busca preço de uma região específica.
+     */
+    private function buscarPrecoRegiao(string $codauxiliar, int $numregiao): ?object
+    {
+        return DB::connection('oracle')
+            ->table('pctabpr as t')
+            ->join('pcprodut as p', 't.codprod', '=', 'p.codprod')
+            ->where('t.numregiao', $numregiao)
+            ->where('p.codauxiliar', $codauxiliar)
+            ->selectRaw('
+                p.codprod,
+                p.codauxiliar,
+                t.numregiao,
+                t.pvenda
+            ')
+            ->first();
+    }
+
+    /**
+     * Busca preço de todas as regiões.
+     *
+     * @return array<int, object>
+     */
+    private function buscarPrecoTodasRegioes(string $codauxiliar): array
+    {
+        return DB::connection('oracle')
+            ->table('pctabpr as t')
+            ->join('pcprodut as p', 't.codprod', '=', 'p.codprod')
+            ->where('p.codauxiliar', $codauxiliar)
+            ->selectRaw('
+                p.codprod,
+                p.codauxiliar,
+                t.numregiao,
+                t.pvenda
+            ')
+            ->orderBy('t.numregiao')
             ->get()
             ->all();
     }
