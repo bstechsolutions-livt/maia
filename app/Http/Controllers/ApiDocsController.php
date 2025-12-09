@@ -194,6 +194,46 @@ class ApiDocsController extends Controller
                             ],
                         ],
                     ],
+                    [
+                        'name' => 'Consulta Estoque',
+                        'method' => 'GET',
+                        'path' => '/produtos/consulta-estoque',
+                        'description' => 'Consulta o estoque de um produto pelo código auxiliar (EAN). Se codfilial não for informado, busca da filial 1. Se codfilial = -1, retorna estoque de todas as filiais.',
+                        'auth' => true,
+                        'parameters' => [
+                            [
+                                'name' => 'codauxiliar',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'Código auxiliar (EAN) do produto',
+                            ],
+                            [
+                                'name' => 'codfilial',
+                                'type' => 'integer',
+                                'required' => false,
+                                'description' => 'Código da filial. Padrão: 1. Use -1 para retornar estoque de todas as filiais.',
+                            ],
+                        ],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'data' => [
+                                        'codprod' => 12345,
+                                        'codauxiliar' => '7896647027882',
+                                        'codfilial' => 1,
+                                        'qt_disponivel' => 150,
+                                    ],
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 404,
+                                'example' => [
+                                    'message' => 'Produto não encontrado.',
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ];

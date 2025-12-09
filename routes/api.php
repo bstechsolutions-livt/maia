@@ -27,4 +27,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // Produtos (WinThor)
     Route::get('/produtos/consulta-cadastro', [ProdutoController::class, 'consultaCadastro'])
         ->name('api.produtos.consulta-cadastro');
+    Route::get('/produtos/consulta-estoque', [ProdutoController::class, 'consultaEstoque'])
+        ->name('api.produtos.consulta-estoque');
 });
