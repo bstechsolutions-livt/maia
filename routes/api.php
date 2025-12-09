@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProdutoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,4 +23,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/user', [AuthController::class, 'user'])->name('api.user');
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
     Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('api.logout-all');
+
+    // Produtos (WinThor)
+    Route::get('/produtos/consulta-cadastro', [ProdutoController::class, 'consultaCadastro'])
+        ->name('api.produtos.consulta-cadastro');
 });

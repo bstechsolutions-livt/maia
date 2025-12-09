@@ -151,6 +151,51 @@ class ApiDocsController extends Controller
                     ],
                 ],
             ],
+            [
+                'group' => 'Produtos (WinThor)',
+                'endpoints' => [
+                    [
+                        'name' => 'Consulta Cadastro',
+                        'method' => 'GET',
+                        'path' => '/produtos/consulta-cadastro',
+                        'description' => 'Consulta o cadastro de um produto pelo código auxiliar (EAN).',
+                        'auth' => true,
+                        'parameters' => [
+                            [
+                                'name' => 'codauxiliar',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'Código auxiliar (EAN) do produto',
+                            ],
+                        ],
+                        'response' => [
+                            'success' => [
+                                'code' => 200,
+                                'example' => [
+                                    'data' => [
+                                        'codprod' => 12345,
+                                        'codauxiliar' => '7896647027882',
+                                        'descricao' => 'PRODUTO EXEMPLO',
+                                        'departamento' => 'MERCEARIA',
+                                        'qt_unitario' => 1,
+                                        'qt_multiplo_venda' => 1,
+                                        'qt_unit_caixa_master' => 12,
+                                        'marca' => 'MARCA EXEMPLO',
+                                        'unidade' => 'UN',
+                                        'unidademaster' => 'CX',
+                                    ],
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 404,
+                                'example' => [
+                                    'message' => 'Produto não encontrado.',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 }
