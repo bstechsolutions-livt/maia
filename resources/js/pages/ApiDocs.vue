@@ -160,7 +160,24 @@ async function executeRequest(group: string, endpoint: Endpoint) {
     const startTime = performance.now();
 
     try {
-        const url = `${props.baseUrl}${endpoint.path}`;
+        let url = `${props.baseUrl}${endpoint.path}`;
+
+        // Para GET, adicionar parâmetros como query string
+        if (endpoint.method === 'GET' && Object.keys(state.params).length > 0) {
+            const filledParams = Object.entries(state.params).filter(
+                ([, value]) => value !== '',
+            );
+            if (filledParams.length > 0) {
+                const queryString = filledParams
+                    .map(
+                        ([key, value]) =>
+                            `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+                    )
+                    .join('&');
+                url += `?${queryString}`;
+            }
+        }
+
         const headers: Record<string, string> = {
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -232,7 +249,25 @@ function formatJson(data: unknown): string {
 
 const curlExample = computed(() => {
     return (endpoint: Endpoint, params: Record<string, string>) => {
-        let curl = `curl -X ${endpoint.method} "${props.baseUrl}${endpoint.path}"`;
+        let url = `${props.baseUrl}${endpoint.path}`;
+
+        // Para GET, adicionar parâmetros como query string
+        if (endpoint.method === 'GET' && Object.keys(params).length > 0) {
+            const filledParams = Object.entries(params).filter(
+                ([, value]) => value !== '',
+            );
+            if (filledParams.length > 0) {
+                const queryString = filledParams
+                    .map(
+                        ([key, value]) =>
+                            `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+                    )
+                    .join('&');
+                url += `?${queryString}`;
+            }
+        }
+
+        let curl = `curl -X ${endpoint.method} "${url}"`;
         curl += '\n  -H "Accept: application/json"';
         curl += '\n  -H "Content-Type: application/json"';
 
@@ -240,6 +275,7 @@ const curlExample = computed(() => {
             curl += '\n  -H "Authorization: Bearer SEU_TOKEN_AQUI"';
         }
 
+        // Para outros métodos, adicionar body
         if (endpoint.method !== 'GET' && Object.keys(params).length > 0) {
             const body = JSON.stringify(params);
             curl += `\n  -d '${body}'`;
