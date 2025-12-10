@@ -282,6 +282,115 @@ class ApiDocsController extends Controller
                     ],
                 ],
             ],
+            [
+                'group' => 'Pedidos (WinThor)',
+                'endpoints' => [
+                    [
+                        'name' => 'Criar Pedido',
+                        'method' => 'POST',
+                        'path' => '/pedidos',
+                        'description' => 'Cria um pedido na integradora do WinThor. Valida cliente pelo CPF, busca preços pela região do cliente ou região informada, e insere o pedido com todos os itens.',
+                        'auth' => true,
+                        'parameters' => [
+                            [
+                                'name' => 'cpf',
+                                'type' => 'string',
+                                'required' => true,
+                                'description' => 'CPF/CNPJ do cliente (apenas números ou formatado)',
+                            ],
+                            [
+                                'name' => 'codtransp',
+                                'type' => 'integer',
+                                'required' => true,
+                                'description' => 'Código da transportadora',
+                            ],
+                            [
+                                'name' => 'codfilial',
+                                'type' => 'integer',
+                                'required' => false,
+                                'description' => 'Código da filial. Padrão: 1',
+                            ],
+                            [
+                                'name' => 'numregiao',
+                                'type' => 'integer',
+                                'required' => false,
+                                'description' => 'Número da região para busca de preços. Se não informado, usa a região do cliente.',
+                            ],
+                            [
+                                'name' => 'obs',
+                                'type' => 'string',
+                                'required' => false,
+                                'description' => 'Observações do pedido',
+                            ],
+                            [
+                                'name' => 'obs_entrega',
+                                'type' => 'string',
+                                'required' => false,
+                                'description' => 'Observações de entrega',
+                            ],
+                            [
+                                'name' => 'itens',
+                                'type' => 'array',
+                                'required' => true,
+                                'description' => 'Lista de itens do pedido',
+                                'children' => [
+                                    [
+                                        'name' => 'codauxiliar',
+                                        'type' => 'string',
+                                        'required' => true,
+                                        'description' => 'Código auxiliar (EAN) do produto',
+                                    ],
+                                    [
+                                        'name' => 'quantidade',
+                                        'type' => 'integer',
+                                        'required' => true,
+                                        'description' => 'Quantidade do produto (deve respeitar o múltiplo)',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'response' => [
+                            'success' => [
+                                'code' => 201,
+                                'example' => [
+                                    'message' => 'Pedido criado com sucesso.',
+                                    'data' => [
+                                        'numped' => 123456,
+                                        'codcli' => 789,
+                                        'cliente' => 'NOME DO CLIENTE',
+                                        'codusur' => 10,
+                                        'codfilial' => 1,
+                                        'codcob' => 'D',
+                                        'cobranca' => 'DINHEIRO',
+                                        'codplpag' => 1,
+                                        'plano_pagamento' => 'A VISTA',
+                                        'codtransp' => 5,
+                                        'obs' => 'Observação do pedido',
+                                        'obs_entrega' => 'Deixar na portaria',
+                                        'itens' => [
+                                            [
+                                                'codprod' => 12345,
+                                                'codauxiliar' => '7896647027882',
+                                                'quantidade' => 10,
+                                                'pvenda' => 29.90,
+                                                'multiplo' => 1,
+                                            ],
+                                        ],
+                                        'total_itens' => 1,
+                                        'valor_total' => 299.00,
+                                    ],
+                                ],
+                            ],
+                            'error' => [
+                                'code' => 422,
+                                'example' => [
+                                    'message' => 'Item 0: Quantidade 15 não é múltiplo de 10 para o produto 7896647027882.',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 }

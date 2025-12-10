@@ -33,6 +33,7 @@ interface Parameter {
     type: string;
     required: boolean;
     description: string;
+    children?: Parameter[];
 }
 
 interface ResponseExample {
@@ -196,7 +197,24 @@ async function executeRequest(group: string, endpoint: Endpoint) {
             endpoint.method !== 'GET' &&
             Object.keys(state.params).length > 0
         ) {
-            options.body = JSON.stringify(state.params);
+            // Parsear campos do tipo array (JSON strings)
+            const bodyParams: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(state.params)) {
+                if (value === '') continue;
+                const param = endpoint.parameters.find((p) => p.name === key);
+                if (param?.type === 'array' && typeof value === 'string') {
+                    try {
+                        bodyParams[key] = JSON.parse(value);
+                    } catch {
+                        bodyParams[key] = value;
+                    }
+                } else if (param?.type === 'integer' && typeof value === 'string') {
+                    bodyParams[key] = parseInt(value, 10);
+                } else {
+                    bodyParams[key] = value;
+                }
+            }
+            options.body = JSON.stringify(bodyParams);
         }
 
         const response = await fetch(url, options);
@@ -277,7 +295,24 @@ const curlExample = computed(() => {
 
         // Para outros métodos, adicionar body
         if (endpoint.method !== 'GET' && Object.keys(params).length > 0) {
-            const body = JSON.stringify(params);
+            // Parsear campos do tipo array (JSON strings)
+            const bodyParams: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(params)) {
+                if (value === '') continue;
+                const param = endpoint.parameters.find((p) => p.name === key);
+                if (param?.type === 'array' && typeof value === 'string') {
+                    try {
+                        bodyParams[key] = JSON.parse(value);
+                    } catch {
+                        bodyParams[key] = value;
+                    }
+                } else if (param?.type === 'integer' && typeof value === 'string') {
+                    bodyParams[key] = parseInt(value, 10);
+                } else {
+                    bodyParams[key] = value;
+                }
+            }
+            const body = JSON.stringify(bodyParams, null, 2);
             curl += `\n  -d '${body}'`;
         }
 
@@ -468,7 +503,59 @@ const curlExample = computed(() => {
                                                     Obrigatório
                                                 </Badge>
                                             </div>
+                                            <p class="text-sm text-muted-foreground">
+                                                {{ param.description }}
+                                            </p>
+                                            <!-- Sub-parâmetros para arrays -->
+                                            <div
+                                                v-if="param.children && param.children.length > 0"
+                                                class="ml-4 space-y-2 border-l-2 border-muted pl-4"
+                                            >
+                                                <p class="text-xs font-medium text-muted-foreground">
+                                                    Cada item do array deve conter:
+                                                </p>
+                                                <div
+                                                    v-for="child in param.children"
+                                                    :key="child.name"
+                                                    class="flex items-center gap-2 text-sm"
+                                                >
+                                                    <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                                                        {{ child.name }}
+                                                    </code>
+                                                    <Badge
+                                                        variant="outline"
+                                                        class="text-xs"
+                                                    >
+                                                        {{ child.type }}
+                                                    </Badge>
+                                                    <Badge
+                                                        v-if="child.required"
+                                                        variant="destructive"
+                                                        class="text-xs"
+                                                    >
+                                                        Obrigatório
+                                                    </Badge>
+                                                    <span class="text-muted-foreground">
+                                                        — {{ child.description }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <!-- Textarea para arrays, Input para outros -->
+                                            <textarea
+                                                v-if="param.type === 'array'"
+                                                :id="param.name"
+                                                v-model="
+                                                    getState(
+                                                        group.group,
+                                                        endpoint,
+                                                    ).params[param.name]
+                                                "
+                                                rows="4"
+                                                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                                                :placeholder="'[{&quot;codauxiliar&quot;: &quot;7896647027882&quot;, &quot;quantidade&quot;: 10}]'"
+                                            ></textarea>
                                             <Input
+                                                v-else
                                                 :id="param.name"
                                                 v-model="
                                                     getState(

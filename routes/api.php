@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PedidoController;
 use App\Http\Controllers\Api\ProdutoController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->name('api.produtos.consulta-estoque');
     Route::get('/produtos/consulta-preco', [ProdutoController::class, 'consultaPreco'])
         ->name('api.produtos.consulta-preco');
+
+    // Pedidos (WinThor)
+    Route::post('/pedidos', [PedidoController::class, 'criar'])
+        ->name('api.pedidos.criar');
 });
